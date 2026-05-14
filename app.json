@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "MTR Scanner",
+    "slug": "mtr-mobile-scanner",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "MTR Scanner usa la camara para leer etiquetas y codigos de barras."
+      }
+    },
+    "android": {
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-asset"
+    ]
+  }
+}
