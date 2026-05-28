@@ -6,24 +6,20 @@ from engine.agents import (
     BacktestAgent,
     DataAgent,
     ForecastAgent,
+    FundamentalAgent,
     RiskAgent,
     SignalAgent,
     TechnicalAgent,
 )
 from engine.config import EngineConfig
+from engine.core.agent import BaseAgent
 from engine.core.orchestrator import Engine
 
 
 def build_engine(config: EngineConfig) -> Engine:
     """Crea el motor con los agentes en el orden de dependencia correcto."""
-    return Engine(
-        config,
-        agents=[
-            DataAgent(),
-            TechnicalAgent(),
-            ForecastAgent(),
-            RiskAgent(),
-            SignalAgent(),
-            BacktestAgent(),
-        ],
-    )
+    agents: list[BaseAgent] = [DataAgent(), TechnicalAgent()]
+    if config.enable_fundamentals:
+        agents.append(FundamentalAgent())
+    agents += [ForecastAgent(), RiskAgent(), SignalAgent(), BacktestAgent()]
+    return Engine(config, agents=agents)

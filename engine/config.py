@@ -34,6 +34,16 @@ class EngineConfig:
     # Tasa libre de riesgo anual (para el Sharpe).
     risk_free_rate: float = 0.0
 
+    # Caché de precios en SQLite (evita re-descargar datos, p. ej. yfinance).
+    use_cache: bool = True
+    cache_path: str = ".cache/prices.db"
+    # Antigüedad máxima (días de mercado) antes de considerar la caché obsoleta.
+    cache_max_age_days: int = 1
+
+    # Análisis fundamental.
+    enable_fundamentals: bool = True
+    fundamentals_source: str = "synthetic"  # synthetic | yfinance
+
     indicator_windows: dict[str, int] = field(
         default_factory=lambda: {
             "sma_fast": 20,

@@ -14,6 +14,7 @@ class SignalAgent(BaseAgent):
       * RSI (sobrecompra/sobreventa)
       * Histograma MACD (momentum)
       * Retorno esperado del pronóstico
+      * Score fundamental (valor/calidad), si está disponible
     """
 
     name = "SignalAgent"
@@ -21,6 +22,7 @@ class SignalAgent(BaseAgent):
     def run(self, context: MarketContext) -> MarketContext:
         ind = context.indicators
         fc = context.forecast
+        fund = context.fundamentals
         reasons: list[str] = []
         score = 0.0
 
@@ -57,6 +59,11 @@ class SignalAgent(BaseAgent):
             elif exp_ret < -0.01:
                 score -= 0.3
                 reasons.append(f"Pronóstico {exp_ret * 100:+.1f}%")
+
+        fund_score = fund.get("score")
+        if fund_score is not None:
+            score += 0.3 * fund_score
+            reasons.append(f"Fundamental {fund_score:+.2f}")
 
         score = max(-1.0, min(1.0, score))
         if score >= 0.3:

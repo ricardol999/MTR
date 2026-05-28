@@ -33,6 +33,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--period-days", type=int, default=365, help="Días de histórico.")
     p.add_argument("--horizon", type=int, default=5, help="Horizonte de pronóstico (días).")
     p.add_argument("--capital", type=float, default=10_000.0, help="Capital inicial.")
+    p.add_argument("--no-cache", action="store_true", help="Desactiva la caché de precios.")
+    p.add_argument(
+        "--no-fundamentals", action="store_true", help="Omite el análisis fundamental."
+    )
+    p.add_argument(
+        "--fundamentals-source",
+        default="synthetic",
+        choices=["synthetic", "yfinance"],
+        help="Origen de fundamentales (def: synthetic).",
+    )
     p.add_argument("--json", action="store_true", help="Salida en JSON.")
     return p.parse_args(argv)
 
@@ -44,6 +54,18 @@ def _report(ctx: MarketContext) -> str:
         "",
         "-- Bitácora de agentes --",
         *ctx.log,
+    ]
+    if ctx.fundamentals:
+        m = ctx.fundamentals["metrics"]
+        lines += [
+            "",
+            "-- Fundamental --",
+            f"Score:             {ctx.fundamentals['score']:+.2f}",
+            f"PE={_fmt(m.get('pe'))} PB={_fmt(m.get('pb'))} "
+            f"ROE={_fmt(m.get('roe'))} D/E={_fmt(m.get('debt_to_equity'))} "
+            f"Margen={_fmt(m.get('profit_margin'))}",
+        ]
+    lines += [
         "",
         "-- Pronóstico --",
         f"Precio actual:     {fc['last_price']:.2f}",
@@ -71,6 +93,10 @@ def _report(ctx: MarketContext) -> str:
     return "\n".join(lines)
 
 
+def _fmt(value: object) -> str:
+    return "n/a" if value is None else f"{float(value):.2f}"  # type: ignore[arg-type]
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     config = EngineConfig(
@@ -80,6 +106,9 @@ def main(argv: list[str] | None = None) -> int:
         period_days=args.period_days,
         forecast_horizon=args.horizon,
         initial_capital=args.capital,
+        use_cache=not args.no_cache,
+        enable_fundamentals=not args.no_fundamentals,
+        fundamentals_source=args.fundamentals_source,
     )
     try:
         ctx = build_engine(config).run()
@@ -93,6 +122,7 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "symbol": ctx.symbol,
                     "indicators": ctx.indicators,
+                    "fundamentals": ctx.fundamentals,
                     "forecast": ctx.forecast,
                     "risk": ctx.risk,
                     "signal": ctx.signal,

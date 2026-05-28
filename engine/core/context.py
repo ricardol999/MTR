@@ -25,6 +25,7 @@ class MarketContext:
 
     # Resultados producidos por cada agente.
     indicators: dict[str, Any] = field(default_factory=dict)
+    fundamentals: dict[str, Any] = field(default_factory=dict)
     forecast: dict[str, Any] = field(default_factory=dict)
     risk: dict[str, Any] = field(default_factory=dict)
     signal: dict[str, Any] = field(default_factory=dict)
