@@ -31,7 +31,13 @@ export default function WatchlistScreen() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const results = await fetchWatchlist(WATCHLIST, { horizon: 5 });
+      // Modelos ligeros y pocos orígenes de validación: respuesta en segundos
+      // para que la lista sea ágil (los modelos pesados se omiten aquí).
+      const results = await fetchWatchlist(WATCHLIST, {
+        horizon: 5,
+        models: ['drift', 'holt'],
+        wfSplits: 8,
+      });
       setItems(results);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');

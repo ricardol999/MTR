@@ -100,6 +100,14 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
+    def handle(self) -> None:
+        # Clientes (Safari/iOS) abren conexiones de sondeo que cierran sin enviar
+        # nada; ignoramos esos cortes para no ensuciar la consola.
+        try:
+            super().handle()
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+            pass
+
     def log_message(self, *args: object) -> None:  # silencia el log por defecto
         pass
 

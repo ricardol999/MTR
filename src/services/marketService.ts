@@ -23,8 +23,24 @@ function buildUrl(path: string, params: Record<string, QueryValue> = {}): string
   return url.toString();
 }
 
-async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+async function getJson<T>(url: string, timeoutMs = 30000): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let response: Response;
+  try {
+    response = await fetch(url, { signal: controller.signal });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error(
+        `La API no respondió en ${timeoutMs / 1000}s. ¿Está corriendo el motor?`
+      );
+    }
+    throw new Error(
+      'No se pudo conectar con la API del motor. Revisa la URL y la red.'
+    );
+  } finally {
+    clearTimeout(timer);
+  }
   if (!response.ok) {
     let detail = `HTTP ${response.status}`;
     try {
@@ -44,6 +60,7 @@ export type AnalysisOptions = {
   source?: 'synthetic' | 'csv' | 'yfinance';
   horizon?: number;
   models?: string[];
+  wfSplits?: number;
   fundamentals?: boolean;
 };
 
@@ -52,6 +69,7 @@ function optionParams(options: AnalysisOptions): Record<string, QueryValue> {
     source: options.source,
     horizon: options.horizon,
     models: options.models?.join(','),
+    wf_splits: options.wfSplits,
     fundamentals: options.fundamentals,
   };
 }
