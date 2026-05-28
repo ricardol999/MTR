@@ -19,6 +19,31 @@ export type WatchlistResponse = {
   results: SignalSummary[];
 };
 
+export type ScreenRow = {
+  symbol: string;
+  action: SignalAction;
+  last_price: number;
+  forecast: number;
+  expected_return: number;
+  best_model: string;
+  fundamental_score: number | null;
+  solidity: number;
+  direction_reliability: number;
+  error_quality: number;
+  signal_strength: number;
+  fundamental: number;
+};
+
+export type ScreenError = {
+  symbol: string;
+  error: string;
+};
+
+export type ScreenResponse = {
+  ranked: ScreenRow[];
+  errors: ScreenError[];
+};
+
 export type ModelMetrics = {
   forecast: number;
   mae: number | null;

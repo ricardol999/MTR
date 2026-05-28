@@ -4,6 +4,7 @@
 import {
   AnalysisResult,
   HealthResponse,
+  ScreenResponse,
   SignalSummary,
   WatchlistResponse,
 } from '../types/market';
@@ -100,6 +101,28 @@ export async function fetchAnalysis(
   return getJson<AnalysisResult>(
     buildUrl('/analyze', { symbol, ...optionParams(options) }),
     timeoutFor(options)
+  );
+}
+
+export type ScreenOptions = AnalysisOptions & {
+  universe?: 'emerging' | 'large';
+  symbols?: string[];
+  top?: number;
+};
+
+// El screening corre el análisis por cada símbolo del universo; con yfinance
+// puede tardar bastante, así que damos un margen amplio.
+export async function fetchScreen(options: ScreenOptions = {}): Promise<ScreenResponse> {
+  const { universe, symbols, top, ...analysis } = options;
+  const timeout = analysis.source === 'yfinance' ? 180000 : 60000;
+  return getJson<ScreenResponse>(
+    buildUrl('/screen', {
+      universe,
+      symbols: symbols?.join(','),
+      top,
+      ...optionParams(analysis),
+    }),
+    timeout
   );
 }
 
