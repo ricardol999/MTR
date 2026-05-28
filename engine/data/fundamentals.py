@@ -63,7 +63,17 @@ class YFinanceFundamentalsProvider(FundamentalsProvider):
                 "yfinance no está instalado. Ejecuta: pip install yfinance"
             ) from exc
 
-        info = yf.Ticker(symbol).info or {}
+        # .info es propenso a fallos/datos parciales; nunca debe tumbar el análisis.
+        try:
+            info = yf.Ticker(symbol).info or {}
+        except Exception:  # noqa: BLE001
+            info = {}
+
+        # debtToEquity de yfinance viene en porcentaje (p. ej. 150 = 1.5x).
+        raw_de = info.get("debtToEquity")
+        debt_to_equity = (
+            float(raw_de) / 100.0 if isinstance(raw_de, (int, float)) else None
+        )
 
         def g(key: str) -> float | None:
             value = info.get(key)
@@ -74,7 +84,7 @@ class YFinanceFundamentalsProvider(FundamentalsProvider):
             "pb": g("priceToBook"),
             "ps": g("priceToSalesTrailing12Months"),
             "roe": g("returnOnEquity"),
-            "debt_to_equity": g("debtToEquity"),
+            "debt_to_equity": debt_to_equity,
             "profit_margin": g("profitMargins"),
             "revenue_growth": g("revenueGrowth"),
             "dividend_yield": g("dividendYield"),

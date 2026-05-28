@@ -15,6 +15,8 @@ from engine.models import available_model_names, build_models, walk_forward
 from engine.models.classical import HoltLinearModel
 from engine.scheduler.runner import run_once, should_alert
 from engine.scheduler.state import SignalState
+from engine.screening import forecast_solidity, screen
+from engine.service import run_analysis
 
 _FAST_QS = "source=synthetic&cache=false&models=drift,holt&wf_splits=10"
 
@@ -182,6 +184,37 @@ def test_scheduler_no_realerta_sin_cambios(tmp_path):
     # Segunda pasada con datos idénticos: ninguna señal cambia -> sin alertas.
     second = run_once(["AAPL", "MSFT"], config, [sink], state)
     assert second == []
+
+
+def test_solidez_en_rango_y_componentes():
+    analysis = run_analysis(_fast_config("AAPL"))
+    sol = forecast_solidity(analysis)
+    assert 0.0 <= sol["solidity"] <= 1.0
+    for key in ("direction_reliability", "error_quality", "signal_strength", "fundamental"):
+        assert 0.0 <= sol[key] <= 1.0
+
+
+def test_screening_rankea_por_solidez():
+    config = _fast_config()
+    result = screen(["AAPL", "MSFT", "NVDA"], config)
+    ranked = result["ranked"]
+    assert len(ranked) == 3
+    assert result["errors"] == []
+    # Ordenado de mayor a menor solidez.
+    solidities = [r["solidity"] for r in ranked]
+    assert solidities == sorted(solidities, reverse=True)
+
+
+def test_screening_top_n():
+    result = screen(["AAPL", "MSFT", "NVDA", "GOOGL"], _fast_config(), top_n=2)
+    assert len(result["ranked"]) == 2
+
+
+def test_api_screen():
+    status, body = handle_request("/screen", f"symbols=AAPL,MSFT&{_FAST_QS}")
+    assert status == 200
+    assert len(body["ranked"]) == 2
+    assert all("solidity" in r for r in body["ranked"])
 
 
 def test_file_alert_sink_escribe_jsonl(tmp_path):
