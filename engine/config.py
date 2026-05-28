@@ -1,0 +1,46 @@
+"""Configuración central del motor."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+
+@dataclass
+class EngineConfig:
+    """Parámetros que gobiernan una corrida del motor.
+
+    Todo es backtesting/análisis sobre datos históricos: el motor no ejecuta
+    órdenes ni opera dinero real.
+    """
+
+    symbol: str = "AAPL"
+    source: str = "synthetic"  # synthetic | csv | yfinance
+    csv_path: str | None = None
+    period_days: int = 365
+
+    # Horizonte de pronóstico en días de mercado.
+    forecast_horizon: int = 5
+
+    # Gestión de riesgo (fracción del capital arriesgado por operación).
+    risk_per_trade: float = 0.02
+    stop_loss_atr_mult: float = 2.0
+
+    # Capital inicial para el backtest.
+    initial_capital: float = 10_000.0
+
+    # Días de mercado por año (para anualizar volatilidad/Sharpe).
+    trading_days_per_year: int = 252
+
+    # Tasa libre de riesgo anual (para el Sharpe).
+    risk_free_rate: float = 0.0
+
+    indicator_windows: dict[str, int] = field(
+        default_factory=lambda: {
+            "sma_fast": 20,
+            "sma_slow": 50,
+            "ema": 20,
+            "rsi": 14,
+            "atr": 14,
+            "bollinger": 20,
+        }
+    )

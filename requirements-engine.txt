@@ -1,0 +1,5 @@
+# Dependencias del motor de análisis y pronóstico bursátil (engine/).
+numpy>=1.26
+pandas>=2.0
+# Opcional: solo necesario para source=yfinance (requiere acceso a internet).
+yfinance>=0.2.40
