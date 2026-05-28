@@ -13,6 +13,8 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
+from engine.data.providers import stable_seed
+
 FUNDAMENTAL_FIELDS = [
     "pe",
     "pb",
@@ -36,7 +38,7 @@ class SyntheticFundamentalsProvider(FundamentalsProvider):
     """Genera fundamentales plausibles y deterministas por símbolo (offline)."""
 
     def get_fundamentals(self, symbol: str) -> dict[str, float | None]:
-        rng = np.random.default_rng(abs(hash(("fund", symbol))) % (2**32))
+        rng = np.random.default_rng(stable_seed(f"fund:{symbol}"))
         return {
             "pe": round(float(rng.uniform(8, 40)), 2),
             "pb": round(float(rng.uniform(0.8, 12)), 2),

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from engine.alerts import Alert, AlertSink, FileAlertSink
+from engine.api.server import handle_request
 from engine.config import EngineConfig
 from engine.data.cache import PriceCache
 from engine.data.fundamentals import SyntheticFundamentalsProvider
@@ -11,6 +13,20 @@ from engine.data.providers import SyntheticDataProvider
 from engine.factory import build_engine
 from engine.models import available_model_names, build_models, walk_forward
 from engine.models.classical import HoltLinearModel
+from engine.scheduler.runner import run_once, should_alert
+from engine.scheduler.state import SignalState
+
+_FAST_QS = "source=synthetic&cache=false&models=drift,holt&wf_splits=10"
+
+
+def _fast_config(symbol: str = "TEST") -> EngineConfig:
+    return EngineConfig(
+        symbol=symbol,
+        source="synthetic",
+        use_cache=False,
+        forecast_models=("drift", "holt"),
+        walk_forward_splits=10,
+    )
 
 
 def _run(symbol: str = "TEST"):
@@ -115,3 +131,66 @@ def test_modelos_opcionales_pronostican_si_disponibles():
     for model in build_models(["arima", "gbr"]):
         value = model.forecast(prices, horizon=5)
         assert np.isfinite(value) and value > 0
+
+
+def test_api_health():
+    status, body = handle_request("/health", "")
+    assert status == 200
+    assert body["status"] == "ok"
+    assert "drift" in body["models"]
+
+
+def test_api_signal_y_analyze():
+    status, body = handle_request("/signal", f"symbol=AAPL&{_FAST_QS}")
+    assert status == 200
+    assert body["action"] in {"BUY", "SELL", "HOLD"}
+
+    status, body = handle_request("/analyze", f"symbol=AAPL&{_FAST_QS}")
+    assert status == 200
+    assert body["symbol"] == "AAPL" and "forecast" in body
+
+
+def test_api_watchlist_y_404():
+    status, body = handle_request("/watchlist", f"symbols=AAPL,MSFT&{_FAST_QS}")
+    assert status == 200
+    assert len(body["results"]) == 2
+
+    status, body = handle_request("/nope", "")
+    assert status == 404
+
+
+def test_should_alert_logica():
+    assert should_alert(None, "BUY") is True
+    assert should_alert(None, "HOLD") is False
+    assert should_alert("HOLD", "SELL") is True
+    assert should_alert("BUY", "BUY") is False
+
+
+class _CollectingSink(AlertSink):
+    def __init__(self) -> None:
+        self.alerts: list[Alert] = []
+
+    def emit(self, alert: Alert) -> None:
+        self.alerts.append(alert)
+
+
+def test_scheduler_no_realerta_sin_cambios(tmp_path):
+    state = SignalState(str(tmp_path / "state.db"))
+    sink = _CollectingSink()
+    config = _fast_config()
+    run_once(["AAPL", "MSFT"], config, [sink], state)
+    # Segunda pasada con datos idénticos: ninguna señal cambia -> sin alertas.
+    second = run_once(["AAPL", "MSFT"], config, [sink], state)
+    assert second == []
+
+
+def test_file_alert_sink_escribe_jsonl(tmp_path):
+    path = tmp_path / "alerts.jsonl"
+    sink = FileAlertSink(str(path))
+    summary = {
+        "symbol": "AAPL", "action": "BUY", "score": 0.5, "expected_return": 0.03,
+        "last_price": 100.0, "forecast": 103.0,
+    }
+    sink.emit(Alert.from_summary(summary, previous_action=None))
+    assert path.read_text().strip().count("\n") == 0
+    assert '"symbol": "AAPL"' in path.read_text()

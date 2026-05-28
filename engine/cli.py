@@ -15,6 +15,7 @@ import sys
 from engine.config import EngineConfig
 from engine.core.context import MarketContext
 from engine.factory import build_engine
+from engine.service import context_to_dict
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -150,19 +151,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(
             json.dumps(
-                {
-                    "symbol": ctx.symbol,
-                    "indicators": ctx.indicators,
-                    "fundamentals": ctx.fundamentals,
-                    "forecast": ctx.forecast,
-                    "risk": ctx.risk,
-                    "signal": ctx.signal,
-                    "backtest": ctx.backtest,
-                    "log": ctx.log,
-                },
-                default=float,
-                ensure_ascii=False,
-                indent=2,
+                context_to_dict(ctx), default=float, ensure_ascii=False, indent=2
             )
         )
     else:

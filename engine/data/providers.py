@@ -8,12 +8,18 @@ CSV o yfinance.
 
 from __future__ import annotations
 
+import hashlib
 from abc import ABC, abstractmethod
 
 import numpy as np
 import pandas as pd
 
 OHLCV_COLUMNS = ["open", "high", "low", "close", "volume"]
+
+
+def stable_seed(text: str) -> int:
+    """Semilla determinista entre procesos (hash() de Python está salado)."""
+    return int.from_bytes(hashlib.md5(text.encode("utf-8")).digest()[:4], "big")
 
 
 class DataProvider(ABC):
@@ -46,8 +52,7 @@ class SyntheticDataProvider(DataProvider):
         self.annual_vol = annual_vol
 
     def get_history(self, symbol: str, period_days: int) -> pd.DataFrame:
-        seed = abs(hash(symbol)) % (2**32)
-        rng = np.random.default_rng(seed)
+        rng = np.random.default_rng(stable_seed(symbol))
 
         dates = pd.bdate_range(end=pd.Timestamp.today().normalize(), periods=period_days)
         n = len(dates)
