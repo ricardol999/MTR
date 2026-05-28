@@ -1,0 +1,14 @@
+.git
+node_modules
+.expo
+dist
+build
+coverage
+.cache
+__pycache__
+*.pyc
+.pytest_cache
+tests
+src
+App.tsx
+*.log
