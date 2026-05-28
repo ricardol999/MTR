@@ -32,6 +32,15 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--csv-path", default=None, help="Ruta del CSV si source=csv.")
     p.add_argument("--period-days", type=int, default=365, help="Días de histórico.")
     p.add_argument("--horizon", type=int, default=5, help="Horizonte de pronóstico (días).")
+    p.add_argument(
+        "--models",
+        default=None,
+        help="Modelos separados por coma (drift,linear,holt,ar,arima,gbr). "
+        "Por defecto usa todos los disponibles.",
+    )
+    p.add_argument(
+        "--wf-splits", type=int, default=30, help="Orígenes de validación walk-forward."
+    )
     p.add_argument("--capital", type=float, default=10_000.0, help="Capital inicial.")
     p.add_argument("--no-cache", action="store_true", help="Desactiva la caché de precios.")
     p.add_argument(
@@ -69,8 +78,12 @@ def _report(ctx: MarketContext) -> str:
         "",
         "-- Pronóstico --",
         f"Precio actual:     {fc['last_price']:.2f}",
+        f"Mejor modelo:      {fc['best_model']}",
         f"Pronóstico {fc['horizon_days']}d:    {fc['point']:.2f} ({fc['expected_return'] * 100:+.2f}%)",
+        f"Ensamble:          {_fmt(fc.get('ensemble'))}",
         f"Banda 95%:         [{fc['lower_95']:.2f}, {fc['upper_95']:.2f}]",
+        "Modelos (walk-forward):",
+        *_model_rows(fc["models"], fc["best_model"]),
         "",
         "-- Riesgo --",
         f"Volatilidad anual: {risk['annual_vol'] * 100:.1f}%",
@@ -97,6 +110,20 @@ def _fmt(value: object) -> str:
     return "n/a" if value is None else f"{float(value):.2f}"  # type: ignore[arg-type]
 
 
+def _model_rows(models: dict, best: str) -> list[str]:
+    rows = []
+    for name, r in models.items():
+        rmse = "n/a" if r["rmse"] is None else f"{r['rmse']:.2f}"
+        mape = "n/a" if r["mape"] is None else f"{r['mape'] * 100:.1f}%"
+        diracc = "n/a" if r["dir_acc"] is None else f"{r['dir_acc'] * 100:.0f}%"
+        mark = " *" if name == best else "  "
+        rows.append(
+            f"  {mark}{name:<7} fc={r['forecast']:.2f}  RMSE={rmse}  "
+            f"MAPE={mape}  dir={diracc}  n={r['n']}"
+        )
+    return rows
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     config = EngineConfig(
@@ -105,6 +132,10 @@ def main(argv: list[str] | None = None) -> int:
         csv_path=args.csv_path,
         period_days=args.period_days,
         forecast_horizon=args.horizon,
+        forecast_models=(
+            tuple(m.strip() for m in args.models.split(",")) if args.models else None
+        ),
+        walk_forward_splits=args.wf_splits,
         initial_capital=args.capital,
         use_cache=not args.no_cache,
         enable_fundamentals=not args.no_fundamentals,

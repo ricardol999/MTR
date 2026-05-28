@@ -21,6 +21,13 @@ class EngineConfig:
     # Horizonte de pronóstico en días de mercado.
     forecast_horizon: int = 5
 
+    # Modelos de pronóstico a usar (None = todos los disponibles).
+    # Opciones: drift, linear, holt, ar, arima, gbr.
+    forecast_models: tuple[str, ...] | None = None
+    # Validación walk-forward.
+    walk_forward_splits: int = 30
+    walk_forward_min_train: int = 60
+
     # Gestión de riesgo (fracción del capital arriesgado por operación).
     risk_per_trade: float = 0.02
     stop_loss_atr_mult: float = 2.0

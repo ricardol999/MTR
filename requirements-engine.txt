@@ -3,3 +3,7 @@ numpy>=1.26
 pandas>=2.0
 # Opcional: solo necesario para source=yfinance (requiere acceso a internet).
 yfinance>=0.2.40
+# Opcionales: habilitan modelos de pronóstico extra (ARIMA y gradient boosting).
+# El motor funciona sin ellos; se detectan en runtime.
+statsmodels>=0.14
+scikit-learn>=1.3
