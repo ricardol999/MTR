@@ -1,0 +1,5 @@
+# HTTPS automático para la API del motor. Define ENGINE_DOMAIN en el entorno.
+# Caddy obtiene y renueva el certificado de Let's Encrypt solo.
+{$ENGINE_DOMAIN} {
+	reverse_proxy engine:8000
+}
