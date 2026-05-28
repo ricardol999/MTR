@@ -74,6 +74,11 @@ function optionParams(options: AnalysisOptions): Record<string, QueryValue> {
   };
 }
 
+// yfinance descarga datos, así que damos más margen que con datos sintéticos.
+function timeoutFor(options: AnalysisOptions): number {
+  return options.source === 'yfinance' ? 60000 : 30000;
+}
+
 export async function checkHealth(): Promise<HealthResponse> {
   return getJson<HealthResponse>(buildUrl('/health'));
 }
@@ -83,7 +88,8 @@ export async function fetchSignal(
   options: AnalysisOptions = {}
 ): Promise<SignalSummary> {
   return getJson<SignalSummary>(
-    buildUrl('/signal', { symbol, ...optionParams(options) })
+    buildUrl('/signal', { symbol, ...optionParams(options) }),
+    timeoutFor(options)
   );
 }
 
@@ -92,7 +98,8 @@ export async function fetchAnalysis(
   options: AnalysisOptions = {}
 ): Promise<AnalysisResult> {
   return getJson<AnalysisResult>(
-    buildUrl('/analyze', { symbol, ...optionParams(options) })
+    buildUrl('/analyze', { symbol, ...optionParams(options) }),
+    timeoutFor(options)
   );
 }
 
@@ -101,7 +108,8 @@ export async function fetchWatchlist(
   options: AnalysisOptions = {}
 ): Promise<SignalSummary[]> {
   const data = await getJson<WatchlistResponse>(
-    buildUrl('/watchlist', { symbols: symbols.join(','), ...optionParams(options) })
+    buildUrl('/watchlist', { symbols: symbols.join(','), ...optionParams(options) }),
+    timeoutFor(options)
   );
   return data.results;
 }
