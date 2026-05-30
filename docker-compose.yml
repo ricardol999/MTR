@@ -22,7 +22,9 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      ENGINE_DOMAIN: ${ENGINE_DOMAIN:?define ENGINE_DOMAIN, p.ej. api.aduax.us}
+      # Define ENGINE_DOMAIN al activar el perfil tls, p.ej.:
+      #   ENGINE_DOMAIN=api.aduax.us docker compose --profile tls up -d
+      ENGINE_DOMAIN: ${ENGINE_DOMAIN:-}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
