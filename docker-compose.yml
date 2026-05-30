@@ -5,9 +5,11 @@ services:
     image: mtr-engine:latest
     restart: unless-stopped
     # Por defecto solo expuesto a localhost del servidor; Caddy lo publica con
-    # HTTPS. Si quieres acceso HTTP directo sin Caddy, cambia a "8000:8000".
+    # HTTPS. Para acceso HTTP directo sin Caddy, quita el prefijo "127.0.0.1:".
+    # El puerto del host se puede cambiar con ENGINE_HOST_PORT (evita colisiones
+    # con otros servicios). El puerto del contenedor es siempre 8000.
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${ENGINE_HOST_PORT:-8000}:8000"
     command: ["python", "-m", "engine.api", "--host", "0.0.0.0", "--port", "8000"]
 
   # Proxy inverso con HTTPS automático (Let's Encrypt). Solo se levanta con el
